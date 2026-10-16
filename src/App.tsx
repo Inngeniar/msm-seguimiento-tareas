@@ -150,8 +150,12 @@ export const App: React.FC = () => {
         {activeTab === 'dashboard' && (
           <DashboardView
             tasks={scopedTasks}
+            allTasks={tasks}
             kpis={kpis}
             selectedUO={selectedUO}
+            setSelectedUO={setSelectedUO}
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
             onSelectTask={(task) => {
               setEditingTask(task);
               setIsFormModalOpen(true);
@@ -169,9 +173,12 @@ export const App: React.FC = () => {
 
         {activeTab === 'tasks' && (
           <TaskListView
-            tasks={scopedTasks}
+            tasks={tasks}
             catalogs={catalogs}
             selectedUO={selectedUO}
+            setSelectedUO={setSelectedUO}
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
             onEditTask={(task) => {
               setEditingTask(task);
               setIsFormModalOpen(true);

@@ -1,25 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, 
-  Filter, 
   CheckCircle2, 
   Edit3, 
   Trash2, 
-  Calendar, 
-  User, 
-  Building2, 
   ChevronLeft, 
   ChevronRight,
-  Eye,
-  Clock,
-  AlertTriangle
+  FilterX
 } from 'lucide-react';
-import { Task, TaskStatus, Catalogs } from '../types';
+import { Task, TaskStatus, Catalogs, UserRole } from '../types';
 
 interface TaskListViewProps {
   tasks: Task[];
   catalogs: Catalogs;
   selectedUO: string;
+  setSelectedUO: (uo: string) => void;
+  selectedRole: UserRole;
+  setSelectedRole: (role: UserRole) => void;
   onEditTask: (task: Task) => void;
   onCompleteTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -29,34 +26,26 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   tasks,
   catalogs,
   selectedUO,
+  setSelectedUO,
+  selectedRole,
+  setSelectedRole,
   onEditTask,
   onCompleteTask,
   onDeleteTask
 }) => {
   const [search, setSearch] = useState('');
-  const [filterUO, setFilterUO] = useState(selectedUO || '');
   const [filterProceso, setFilterProceso] = useState('');
-  const [filterResponsable, setFilterResponsable] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDetailTask, setSelectedDetailTask] = useState<Task | null>(null);
 
   const pageSize = 25;
 
-  // Sync if selectedUO changes in navbar
-  React.useEffect(() => {
-    if (selectedUO !== undefined) {
-      setFilterUO(selectedUO);
-      setCurrentPage(1);
-    }
-  }, [selectedUO]);
-
-  // Filter tasks
+  // Filter tasks based on global UO/Role and local search/process/status
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
-      if (filterUO && t.uo !== filterUO) return false;
+      if (selectedUO && t.uo !== selectedUO) return false;
+      if (selectedRole !== 'TODOS' && t.responsable !== selectedRole) return false;
       if (filterProceso && t.proceso !== filterProceso) return false;
-      if (filterResponsable && t.responsable !== filterResponsable) return false;
       if (filterEstado && t.estado !== filterEstado) return false;
 
       if (search.trim()) {
@@ -68,6 +57,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           (t.evaluador || '') + ' ' +
           (t.uo || '') + ' ' +
           (t.proceso || '') + ' ' +
+          (t.responsable || '') + ' ' +
           (t.id || '')
         ).toLowerCase();
         if (!matchText.includes(query)) return false;
@@ -75,7 +65,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
 
       return true;
     });
-  }, [tasks, search, filterUO, filterProceso, filterResponsable, filterEstado]);
+  }, [tasks, selectedUO, selectedRole, search, filterProceso, filterEstado]);
 
   const totalPages = Math.ceil(filteredTasks.length / pageSize) || 1;
   const paginatedTasks = useMemo(() => {
@@ -124,6 +114,17 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
     }
   };
 
+  const hasActiveFilters = Boolean(search || selectedUO || (selectedRole && selectedRole !== 'TODOS') || filterProceso || filterEstado);
+
+  const resetAllFilters = () => {
+    setSearch('');
+    setSelectedUO('');
+    setSelectedRole('TODOS');
+    setFilterProceso('');
+    setFilterEstado('');
+    setCurrentPage(1);
+  };
+
   return (
     <div style={{ padding: '1.75rem', maxWidth: '1440px', margin: '0 auto' }}>
       {/* FILTER & SEARCH TOOLBAR */}
@@ -132,23 +133,60 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
         borderRadius: 'var(--radius-lg)',
         padding: '1.25rem',
         boxShadow: 'var(--shadow-sm)',
-        marginBottom: '1.25rem'
+        marginBottom: '1.25rem',
+        border: selectedUO || selectedRole !== 'TODOS' ? '2px solid var(--msm-accent)' : '1px solid #E2E8F0'
       }}>
+        {/* Active Filter Notice */}
+        {(selectedUO || selectedRole !== 'TODOS') && (
+          <div style={{
+            backgroundColor: '#F0F9FF',
+            border: '1px solid #BAE6FD',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.5rem 0.85rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.82rem',
+            color: '#0369A1'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>Filtro activo desde la barra superior:</span>
+              {selectedUO && (
+                <strong style={{ backgroundColor: 'var(--msm-navy)', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                  Sede: {selectedUO}
+                </strong>
+              )}
+              {selectedRole !== 'TODOS' && (
+                <strong style={{ backgroundColor: '#0284C7', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                  Perfil: {selectedRole}
+                </strong>
+              )}
+            </div>
+            <button
+              onClick={() => { setSelectedUO(''); setSelectedRole('TODOS'); }}
+              style={{ color: '#0369A1', fontWeight: 700, textDecoration: 'underline', fontSize: '0.75rem' }}
+            >
+              Mostrar todas las sedes y roles
+            </button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search Box */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             backgroundColor: '#F8FAFC',
-            border: '1px solid #E2E8F0',
+            border: '1px solid #CBD5E1',
             borderRadius: 'var(--radius-md)',
-            padding: '0.45rem 0.85rem',
-            flex: '1 1 280px'
+            padding: '0.5rem 0.85rem',
+            flex: '1 1 260px'
           }}>
-            <Search size={18} color="#94A3B8" style={{ marginRight: '0.5rem' }} />
+            <Search size={18} color="#64748B" style={{ marginRight: '0.5rem' }} />
             <input
               type="text"
-              placeholder="Buscar en tareas, situaciones, observaciones, evaluador..."
+              placeholder="Buscar por palabra clave (tarea, hallazgo, responsable...)"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               style={{
@@ -160,109 +198,121 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
               }}
             />
             {search && (
-              <button 
-                onClick={() => setSearch('')}
-                style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 700 }}
-              >
+              <button onClick={() => setSearch('')} style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 700 }}>
                 ✕
               </button>
             )}
           </div>
 
-          {/* Filter UO */}
-          <select
-            value={filterUO}
-            onChange={(e) => { setFilterUO(e.target.value); setCurrentPage(1); }}
-            style={{
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              fontSize: '0.85rem',
-              fontWeight: 500
-            }}
-          >
-            <option value="">Todas las UO</option>
-            {catalogs.uos.map(uo => (
-              <option key={uo} value={uo}>{uo}</option>
-            ))}
-          </select>
-
-          {/* Filter Proceso */}
-          <select
-            value={filterProceso}
-            onChange={(e) => { setFilterProceso(e.target.value); setCurrentPage(1); }}
-            style={{
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              fontSize: '0.85rem',
-              fontWeight: 500
-            }}
-          >
-            <option value="">Todos los Procesos</option>
-            {catalogs.procesos.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
-          {/* Filter Responsable */}
-          <select
-            value={filterResponsable}
-            onChange={(e) => { setFilterResponsable(e.target.value); setCurrentPage(1); }}
-            style={{
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              fontSize: '0.85rem',
-              fontWeight: 500
-            }}
-          >
-            <option value="">Todos los Responsables</option>
-            {catalogs.responsables.map(r => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-
-          {/* Filter Estado */}
-          <select
-            value={filterEstado}
-            onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-            style={{
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#F8FAFC',
-              fontSize: '0.85rem',
-              fontWeight: 500
-            }}
-          >
-            <option value="">Todos los Estados</option>
-            {catalogs.estados.map(est => (
-              <option key={est} value={est}>{est}</option>
-            ))}
-          </select>
-
-          {(search || filterUO || filterProceso || filterResponsable || filterEstado) && (
-            <button
-              onClick={() => {
-                setSearch('');
-                setFilterUO('');
-                setFilterProceso('');
-                setFilterResponsable('');
-                setFilterEstado('');
-                setCurrentPage(1);
-              }}
+          {/* Filter UO Selector */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, marginBottom: '2px' }}>Sede (UO):</span>
+            <select
+              value={selectedUO}
+              onChange={(e) => { setSelectedUO(e.target.value); setCurrentPage(1); }}
               style={{
-                fontSize: '0.8rem',
-                color: 'var(--msm-accent)',
-                fontWeight: 600,
-                textDecoration: 'underline'
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #CBD5E1',
+                backgroundColor: selectedUO ? '#EFF6FF' : '#F8FAFC',
+                color: selectedUO ? '#1D4ED8' : '#1E293B',
+                fontSize: '0.85rem',
+                fontWeight: 600
               }}
             >
-              Limpiar filtros
+              <option value="">Todas las UO</option>
+              {catalogs.uos.map(uo => (
+                <option key={uo} value={uo}>{uo}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter Responsable Selector */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, marginBottom: '2px' }}>Responsable:</span>
+            <select
+              value={selectedRole}
+              onChange={(e) => { setSelectedRole(e.target.value as UserRole); setCurrentPage(1); }}
+              style={{
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #CBD5E1',
+                backgroundColor: selectedRole !== 'TODOS' ? '#EFF6FF' : '#F8FAFC',
+                color: selectedRole !== 'TODOS' ? '#1D4ED8' : '#1E293B',
+                fontSize: '0.85rem',
+                fontWeight: 600
+              }}
+            >
+              <option value="TODOS">Todos los Responsables</option>
+              {catalogs.responsables.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter Proceso */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, marginBottom: '2px' }}>Proceso:</span>
+            <select
+              value={filterProceso}
+              onChange={(e) => { setFilterProceso(e.target.value); setCurrentPage(1); }}
+              style={{
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#F8FAFC',
+                fontSize: '0.85rem',
+                fontWeight: 500
+              }}
+            >
+              <option value="">Todos los Procesos</option>
+              {catalogs.procesos.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter Estado */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, marginBottom: '2px' }}>Estado:</span>
+            <select
+              value={filterEstado}
+              onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
+              style={{
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid #CBD5E1',
+                backgroundColor: '#F8FAFC',
+                fontSize: '0.85rem',
+                fontWeight: 500
+              }}
+            >
+              <option value="">Todos los Estados</option>
+              {catalogs.estados.map(est => (
+                <option key={est} value={est}>{est}</option>
+              ))}
+            </select>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={resetAllFilters}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.8rem',
+                color: '#EF4444',
+                fontWeight: 600,
+                alignSelf: 'flex-end',
+                padding: '0.45rem 0.75rem',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA'
+              }}
+            >
+              <FilterX size={15} />
+              <span>Limpiar filtros</span>
             </button>
           )}
         </div>
@@ -278,7 +328,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           color: '#64748B'
         }}>
           <span>
-            Mostrando <strong>{filteredTasks.length}</strong> tareas de {tasks.length} totales
+            Mostrando <strong>{filteredTasks.length}</strong> tareas de <strong>{tasks.length}</strong> registradas en el sistema
           </span>
 
           {/* Pagination Controls */}
@@ -399,7 +449,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                       </td>
 
                       {/* Responsable */}
-                      <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top', color: '#475569' }}>
+                      <td style={{ padding: '0.75rem 1rem', verticalAlign: 'top', color: '#475569', fontWeight: 500 }}>
                         {t.responsable}
                       </td>
 
