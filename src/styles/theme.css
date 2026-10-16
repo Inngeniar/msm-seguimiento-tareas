@@ -1,0 +1,89 @@
+:root {
+  /* Mundo Salud Médica Official Brand Colors (Manual Corporativo) */
+  --msm-navy: #011C4E;        /* Pantone 2766 C (Navy Blue) */
+  --msm-navy-light: #0d2861;
+  --msm-blue: #002885;        /* Pantone 2747 C (Royal Blue) */
+  --msm-blue-light: #0f40b5;
+  --msm-accent: #0284C7;      /* Cyan Sky Accent */
+  --msm-accent-hover: #0369A1;
+  
+  --msm-gray-dark: #2D3142;
+  --msm-gray-cool: #53565A;    /* Cool Gray 11 C */
+  --msm-gray-light: #94A3B8;   /* Pantone 7543 C */
+  --msm-bg-light: #F8FAFC;
+  --msm-surface: #FFFFFF;
+  --msm-border: #E2E8F0;
+
+  /* Status Colors */
+  --status-success: #10B981;    /* Cumplida a Tiempo */
+  --status-success-bg: #ECFDF5;
+  --status-warning: #F59E0B;    /* Cumplida con Atraso */
+  --status-warning-bg: #FFFBEB;
+  --status-pending: #3B82F6;    /* Pendiente */
+  --status-pending-bg: #EFF6FF;
+  --status-danger: #EF4444;     /* No Cumplida / Vencida */
+  --status-danger-bg: #FEF2F2;
+  --status-neutral: #64748B;
+  --status-neutral-bg: #F1F5F9;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Shadows & Glassmorphism */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 4px 20px -2px rgba(1, 28, 78, 0.08);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--msm-bg-light);
+  color: var(--msm-gray-dark);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.2s ease;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

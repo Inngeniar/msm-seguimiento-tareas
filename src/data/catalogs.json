@@ -1,0 +1,55 @@
+{
+  "uos": [
+    "DOE",
+    "ESE-LD",
+    "ESESP",
+    "HMB",
+    "HRQV-M",
+    "HSCJ-Q",
+    "HSF-D",
+    "HSJD-H",
+    "HSVP-SR",
+    "HTUU-T",
+    "ISABU",
+    "RSA",
+    "SMA"
+  ],
+  "procesos": [
+    "ADMISIONES",
+    "ADMISIONES Y AUTORIZACIONES",
+    "ASIGNACIÓN DE CITAS",
+    "AUDITORÍA CONCURRENTE",
+    "AUDITORÍA TÉCNICA",
+    "AUTORIZACIONES",
+    "CALL CENTER",
+    "CONCURRENCIA",
+    "GESTIÓN INTEGRAL DE FACTURACIÓN",
+    "GESTIÓN SOAT | ADRES",
+    "GLOSAS | DEVOLUCIONES",
+    "LIQUIDACIÓN FACTURAS",
+    "PEYDT",
+    "RADICACIÓN",
+    "TODOS LOS PROCESOS MISIONALES",
+    "TRAZABILIDAD"
+  ],
+  "evaluadores": [
+    "GUSTAVO A. TABORDA",
+    "HERNÁN D. MORALES",
+    "LEIDY JOHANNA MUÑOZ",
+    "NICOLÁS F. BEDOYA"
+  ],
+  "responsables": [
+    "LÍDER DE PROCESO",
+    "DIRECTOR UO",
+    "DOE",
+    "COORDINADOR DE CALIDAD",
+    "GERENCIA"
+  ],
+  "estados": [
+    "CUMPLIDA A TIEMPO",
+    "CUMPLIDA CON ATRASO",
+    "PENDIENTE",
+    "NO CUMPLIDA",
+    "SIN FECHA COMPROMISO"
+  ]
+}
