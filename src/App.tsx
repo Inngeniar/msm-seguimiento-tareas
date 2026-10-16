@@ -9,8 +9,16 @@ import {
   deleteTask, 
   resetToInitial, 
   calculateKPIs, 
-  getCatalogs 
+  getCatalogs,
+  recalculateTaskStatus
 } from './services/storage';
+import { 
+  fetchCloudTasks, 
+  upsertCloudTask, 
+  deleteCloudTask, 
+  subscribeToCloudChanges, 
+  getStoredSupabaseConfig 
+} from './services/supabase';
 import { exportTasksToExcel } from './utils/excelExporter';
 import { Task, UserRole } from './types';
 import { Navbar } from './components/Navbar';
@@ -20,6 +28,7 @@ import { TaskFormModal } from './components/TaskFormModal';
 import { CompleteTaskModal } from './components/CompleteTaskModal';
 import { UOPerformanceView } from './components/UOPerformanceView';
 import { ProcessMatrixView } from './components/ProcessMatrixView';
+import { CloudSettingsModal } from './components/CloudSettingsModal';
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -32,16 +41,55 @@ export const App: React.FC = () => {
   const [completingTask, setCompletingTask] = useState<Task | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
 
   // Notifications
   const [notification, setNotification] = useState<string | null>(null);
 
   const catalogs = useMemo(() => getCatalogs(), []);
 
-  // Load initial tasks on mount
-  useEffect(() => {
+  // Sync / Load tasks from Cloud or Local
+  const loadData = async () => {
+    const cfg = getStoredSupabaseConfig();
+    if (cfg.url && cfg.anonKey) {
+      const cloudTasks = await fetchCloudTasks();
+      if (cloudTasks && cloudTasks.length > 0) {
+        const processed = cloudTasks.map(recalculateTaskStatus);
+        setTasks(processed);
+        saveTasks(processed); // mirror locally for offline backup
+        setIsCloudConnected(true);
+        return;
+      }
+      setIsCloudConnected(true);
+    } else {
+      setIsCloudConnected(false);
+    }
+
+    // Local fallback
     const loaded = loadTasks();
     setTasks(loaded);
+  };
+
+  // Load initial tasks on mount and setup real-time subscription
+  useEffect(() => {
+    loadData();
+
+    // Subscribe to cloud database changes in real-time
+    const unsubscribe = subscribeToCloudChanges(() => {
+      fetchCloudTasks().then((cloudTasks) => {
+        if (cloudTasks && cloudTasks.length > 0) {
+          const processed = cloudTasks.map(recalculateTaskStatus);
+          setTasks(processed);
+          saveTasks(processed);
+          showNotification('🔄 Datos actualizados en tiempo real desde otra sede.');
+        }
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const showNotification = (msg: string) => {
@@ -61,31 +109,49 @@ export const App: React.FC = () => {
   // Compute live KPIs
   const kpis = useMemo(() => calculateKPIs(scopedTasks), [scopedTasks]);
 
-  // Handlers
-  const handleSaveTask = (taskData: any) => {
+  // Handlers with dual Local + Cloud sync
+  const handleSaveTask = async (taskData: any) => {
+    let targetTask: Task;
     if (editingTask) {
       const updated = updateTask(taskData);
+      targetTask = updated.find(t => t.id === taskData.id) || taskData;
       setTasks(updated);
       showNotification('✓ Tarea actualizada exitosamente.');
     } else {
       const updated = addTask(taskData);
+      targetTask = updated[0];
       setTasks(updated);
       showNotification('✓ Nueva tarea registrada en la matriz.');
+    }
+
+    if (isCloudConnected && targetTask) {
+      await upsertCloudTask(targetTask);
     }
     setEditingTask(null);
   };
 
-  const handleConfirmComplete = (taskId: string, fechaEjecucion: string, observaciones: string) => {
+  const handleConfirmComplete = async (taskId: string, fechaEjecucion: string, observaciones: string) => {
     const updated = completeTask(taskId, fechaEjecucion, observaciones);
     setTasks(updated);
     showNotification('✓ Tarea marcada como cumplida.');
+    
+    if (isCloudConnected) {
+      const completed = updated.find(t => t.id === taskId);
+      if (completed) {
+        await upsertCloudTask(completed);
+      }
+    }
     setCompletingTask(null);
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     const updated = deleteTask(taskId);
     setTasks(updated);
     showNotification('✓ Tarea eliminada del seguimiento.');
+
+    if (isCloudConnected) {
+      await deleteCloudTask(taskId);
+    }
   };
 
   const handleExportExcel = () => {
@@ -143,6 +209,8 @@ export const App: React.FC = () => {
         onExportExcel={handleExportExcel}
         onResetData={handleResetData}
         totalTasks={scopedTasks.length}
+        isCloudConnected={isCloudConnected}
+        onOpenCloudSettings={() => setIsCloudModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -235,6 +303,14 @@ export const App: React.FC = () => {
           setCompletingTask(null);
         }}
         onConfirm={handleConfirmComplete}
+      />
+
+      {/* Cloud Settings & Sync Modal */}
+      <CloudSettingsModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        tasks={tasks}
+        onTasksUpdatedFromCloud={loadData}
       />
 
       {/* Footer */}

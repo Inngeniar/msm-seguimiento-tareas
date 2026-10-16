@@ -9,7 +9,10 @@ import {
   Download, 
   RotateCcw,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Cloud,
+  CloudCheck,
+  CloudOff
 } from 'lucide-react';
 import { Catalogs, UserRole } from '../types';
 
@@ -24,6 +27,8 @@ interface NavbarProps {
   onExportExcel: () => void;
   onResetData: () => void;
   totalTasks: number;
+  isCloudConnected: boolean;
+  onOpenCloudSettings: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,7 +41,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   catalogs,
   onExportExcel,
   onResetData,
-  totalTasks
+  totalTasks,
+  isCloudConnected,
+  onOpenCloudSettings
 }) => {
   return (
     <header style={{
@@ -164,6 +171,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Cloud Sync Button */}
+          <button
+            onClick={onOpenCloudSettings}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: isCloudConnected ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+              color: isCloudConnected ? '#38BDF8' : '#CBD5E1',
+              border: `1px solid ${isCloudConnected ? 'rgba(56, 189, 248, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
+              padding: '0.45rem 0.85rem',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={isCloudConnected ? 'Conectado a la Nube (Tiempo Real Activo)' : 'Configurar Conexión Nube (Supabase)'}
+          >
+            {isCloudConnected ? <CloudCheck size={16} /> : <Cloud size={16} />}
+            <span>{isCloudConnected ? 'Nube Activa' : 'Conectar Nube'}</span>
+          </button>
 
           {/* Actions: Export Excel & Reset */}
           <button
