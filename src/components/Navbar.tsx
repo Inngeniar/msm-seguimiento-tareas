@@ -12,7 +12,8 @@ import {
   UserCheck,
   Cloud,
   CloudCheck,
-  CloudOff
+  CloudOff,
+  Calendar
 } from 'lucide-react';
 import { Catalogs, UserRole } from '../types';
 
@@ -23,6 +24,11 @@ interface NavbarProps {
   setSelectedUO: (uo: string) => void;
   selectedRole: UserRole;
   setSelectedRole: (role: UserRole) => void;
+  selectedYear: string;
+  setSelectedYear: (year: string) => void;
+  selectedMonth: string;
+  setSelectedMonth: (month: string) => void;
+  availableYears: string[];
   catalogs: Catalogs;
   onExportExcel: () => void;
   onResetData: () => void;
@@ -31,6 +37,22 @@ interface NavbarProps {
   onOpenCloudSettings: () => void;
 }
 
+const MONTH_OPTIONS = [
+  { value: '', label: 'Todos los Meses' },
+  { value: '01', label: '01 - Enero' },
+  { value: '02', label: '02 - Febrero' },
+  { value: '03', label: '03 - Marzo' },
+  { value: '04', label: '04 - Abril' },
+  { value: '05', label: '05 - Mayo' },
+  { value: '06', label: '06 - Junio' },
+  { value: '07', label: '07 - Julio' },
+  { value: '08', label: '08 - Agosto' },
+  { value: '09', label: '09 - Septiembre' },
+  { value: '10', label: '10 - Octubre' },
+  { value: '11', label: '11 - Noviembre' },
+  { value: '12', label: '12 - Diciembre' },
+];
+
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
@@ -38,6 +60,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSelectedUO,
   selectedRole,
   setSelectedRole,
+  selectedYear,
+  setSelectedYear,
+  selectedMonth,
+  setSelectedMonth,
+  availableYears,
   catalogs,
   onExportExcel,
   onResetData,
@@ -167,6 +194,74 @@ export const Navbar: React.FC<NavbarProps> = ({
               {catalogs.responsables.map((resp) => (
                 <option key={resp} value={resp} style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>
                   {resp}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Temporal Filter: Year */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(255, 255, 255, 0.15)'
+          }}>
+            <Calendar size={15} color="#FBBF24" style={{ marginRight: '0.4rem' }} />
+            <span style={{ fontSize: '0.75rem', color: '#CBD5E1', marginRight: '0.35rem', fontWeight: 600 }}>
+              Año:
+            </span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#FFFFFF',
+                border: 'none',
+                outline: 'none',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.85rem'
+              }}
+            >
+              <option value="" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>Todos los Años</option>
+              {availableYears.map((yr) => (
+                <option key={yr} value={yr} style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>
+                  {yr}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Temporal Filter: Month */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(255, 255, 255, 0.15)'
+          }}>
+            <span style={{ fontSize: '0.75rem', color: '#CBD5E1', marginRight: '0.35rem', fontWeight: 600 }}>
+              Mes:
+            </span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{
+                backgroundColor: 'transparent',
+                color: '#FFFFFF',
+                border: 'none',
+                outline: 'none',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.85rem'
+              }}
+            >
+              {MONTH_OPTIONS.map((mo) => (
+                <option key={mo.value} value={mo.value} style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>
+                  {mo.label}
                 </option>
               ))}
             </select>

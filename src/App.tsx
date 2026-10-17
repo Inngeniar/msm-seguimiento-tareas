@@ -35,6 +35,8 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'new-task' | 'uo-summary' | 'process-summary'>('dashboard');
   const [selectedUO, setSelectedUO] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('TODOS');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
   
   // Modals state
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -97,14 +99,37 @@ export const App: React.FC = () => {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Filter tasks by selected UO and Role for Dashboard and Views
+  // Extract distinct years from tasks
+  const availableYears = useMemo(() => {
+    const yrs = new Set<string>();
+    tasks.forEach(t => {
+      const d = t.fechaCompromiso || t.fechaEvaluacion;
+      if (d && d.length >= 4) {
+        const yr = d.slice(0, 4);
+        if (/^\d{4}$/.test(yr)) yrs.add(yr);
+      }
+    });
+    return Array.from(yrs).sort().reverse();
+  }, [tasks]);
+
+  // Filter tasks by selected UO, Role, Year, and Month for Dashboard and Views
   const scopedTasks = useMemo(() => {
     return tasks.filter(t => {
       if (selectedUO && t.uo !== selectedUO) return false;
       if (selectedRole !== 'TODOS' && t.responsable !== selectedRole) return false;
+      if (selectedYear) {
+        const d = t.fechaCompromiso || t.fechaEvaluacion;
+        if (!d || !d.startsWith(selectedYear)) return false;
+      }
+      if (selectedMonth) {
+        const d = t.fechaCompromiso || t.fechaEvaluacion;
+        if (!d) return false;
+        const parts = d.split('-');
+        if (parts.length < 2 || parts[1] !== selectedMonth) return false;
+      }
       return true;
     });
-  }, [tasks, selectedUO, selectedRole]);
+  }, [tasks, selectedUO, selectedRole, selectedYear, selectedMonth]);
 
   // Compute live KPIs
   const kpis = useMemo(() => calculateKPIs(scopedTasks), [scopedTasks]);
@@ -205,6 +230,11 @@ export const App: React.FC = () => {
         setSelectedUO={setSelectedUO}
         selectedRole={selectedRole}
         setSelectedRole={setSelectedRole}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        availableYears={availableYears}
         catalogs={catalogs}
         onExportExcel={handleExportExcel}
         onResetData={handleResetData}
