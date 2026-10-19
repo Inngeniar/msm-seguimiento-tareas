@@ -57,7 +57,7 @@ export const UOPerformanceView: React.FC<UOPerformanceViewProps> = ({
           Consolidado Operativo y Auditoría por Unidad Operativa (UO)
         </h2>
         <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '2px' }}>
-          Seguimiento comparativo de los 13 centros de operación asistencial y administrativa de Mundo Salud Médica
+          Seguimiento comparativo de los {catalogs.uos.length} centros de operación asistencial y administrativa de Mundo Salud Médica
         </p>
       </div>
 

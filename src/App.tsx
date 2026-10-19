@@ -9,7 +9,14 @@ import {
   deleteTask, 
   resetToInitial, 
   calculateKPIs, 
-  getCatalogs,
+  loadCatalogs,
+  resetCatalogs,
+  addUOToCatalogs,
+  removeUOFromCatalogs,
+  addEvaluadorToCatalogs,
+  removeEvaluadorFromCatalogs,
+  addProcesoToCatalogs,
+  removeProcesoFromCatalogs,
   recalculateTaskStatus
 } from './services/storage';
 import { 
@@ -20,7 +27,7 @@ import {
   getStoredSupabaseConfig 
 } from './services/supabase';
 import { exportTasksToExcel } from './utils/excelExporter';
-import { Task, UserRole } from './types';
+import { Task, UserRole, Catalogs } from './types';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { TaskListView } from './components/TaskListView';
@@ -29,6 +36,7 @@ import { CompleteTaskModal } from './components/CompleteTaskModal';
 import { UOPerformanceView } from './components/UOPerformanceView';
 import { ProcessMatrixView } from './components/ProcessMatrixView';
 import { CloudSettingsModal } from './components/CloudSettingsModal';
+import { ManageCatalogsModal } from './components/ManageCatalogsModal';
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -49,7 +57,9 @@ export const App: React.FC = () => {
   // Notifications
   const [notification, setNotification] = useState<string | null>(null);
 
-  const catalogs = useMemo(() => getCatalogs(), []);
+  // Dynamic Catalogs state
+  const [catalogs, setCatalogs] = useState<Catalogs>(() => loadCatalogs());
+  const [isCatalogsModalOpen, setIsCatalogsModalOpen] = useState(false);
 
   // Sync / Load tasks from Cloud or Local
   const loadData = async () => {
@@ -192,6 +202,49 @@ export const App: React.FC = () => {
     }
   };
 
+  // Dynamic Catalog handlers
+  const handleAddUO = (name: string) => {
+    const updated = addUOToCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Sede ${name} agregada al catálogo.`);
+  };
+
+  const handleRemoveUO = (name: string) => {
+    const updated = removeUOFromCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Sede ${name} removida del catálogo.`);
+  };
+
+  const handleAddEvaluador = (name: string) => {
+    const updated = addEvaluadorToCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Evaluador ${name} agregado al catálogo.`);
+  };
+
+  const handleRemoveEvaluador = (name: string) => {
+    const updated = removeEvaluadorFromCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Evaluador ${name} removido del catálogo.`);
+  };
+
+  const handleAddProceso = (name: string) => {
+    const updated = addProcesoToCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Proceso ${name} agregado al catálogo.`);
+  };
+
+  const handleRemoveProceso = (name: string) => {
+    const updated = removeProcesoFromCatalogs(name);
+    setCatalogs(updated);
+    showNotification(`✓ Proceso ${name} removido del catálogo.`);
+  };
+
+  const handleResetCatalogs = () => {
+    const updated = resetCatalogs();
+    setCatalogs(updated);
+    showNotification('✓ Catálogos restaurados a valores oficiales por defecto.');
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Toast Notification */}
@@ -241,6 +294,7 @@ export const App: React.FC = () => {
         totalTasks={scopedTasks.length}
         isCloudConnected={isCloudConnected}
         onOpenCloudSettings={() => setIsCloudModalOpen(true)}
+        onOpenManageCatalogs={() => setIsCatalogsModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -341,6 +395,21 @@ export const App: React.FC = () => {
         onClose={() => setIsCloudModalOpen(false)}
         tasks={tasks}
         onTasksUpdatedFromCloud={loadData}
+      />
+
+      {/* Manage Catalogs Modal (Dynamic UOs, Evaluadores, Procesos) */}
+      <ManageCatalogsModal
+        isOpen={isCatalogsModalOpen}
+        onClose={() => setIsCatalogsModalOpen(false)}
+        catalogs={catalogs}
+        tasks={tasks}
+        onAddUO={handleAddUO}
+        onRemoveUO={handleRemoveUO}
+        onAddEvaluador={handleAddEvaluador}
+        onRemoveEvaluador={handleRemoveEvaluador}
+        onAddProceso={handleAddProceso}
+        onRemoveProceso={handleRemoveProceso}
+        onResetCatalogs={handleResetCatalogs}
       />
 
       {/* Footer */}

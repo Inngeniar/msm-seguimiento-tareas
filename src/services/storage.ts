@@ -3,9 +3,105 @@ import initialTasksData from '../data/initialTasks.json';
 import catalogsData from '../data/catalogs.json';
 
 const STORAGE_KEY = 'msm_seguimiento_tareas_v2';
+const CATALOGS_KEY = 'msm_catalogs_v2';
+
+export const loadCatalogs = (): Catalogs => {
+  try {
+    const stored = localStorage.getItem(CATALOGS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && Array.isArray(parsed.uos) && Array.isArray(parsed.evaluadores)) {
+        return parsed as Catalogs;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading catalogs from localStorage', err);
+  }
+  return catalogsData as Catalogs;
+};
+
+export const saveCatalogs = (catalogs: Catalogs): void => {
+  try {
+    localStorage.setItem(CATALOGS_KEY, JSON.stringify(catalogs));
+  } catch (err) {
+    console.error('Error saving catalogs to localStorage', err);
+  }
+};
+
+export const resetCatalogs = (): Catalogs => {
+  const defaults = catalogsData as Catalogs;
+  saveCatalogs(defaults);
+  return defaults;
+};
 
 export const getCatalogs = (): Catalogs => {
-  return catalogsData as Catalogs;
+  return loadCatalogs();
+};
+
+export const addUOToCatalogs = (uoName: string): Catalogs => {
+  const current = loadCatalogs();
+  const trimmed = uoName.trim().toUpperCase();
+  if (!trimmed || current.uos.includes(trimmed)) return current;
+  const updated: Catalogs = {
+    ...current,
+    uos: [...current.uos, trimmed].sort()
+  };
+  saveCatalogs(updated);
+  return updated;
+};
+
+export const removeUOFromCatalogs = (uoName: string): Catalogs => {
+  const current = loadCatalogs();
+  const updated: Catalogs = {
+    ...current,
+    uos: current.uos.filter(u => u !== uoName)
+  };
+  saveCatalogs(updated);
+  return updated;
+};
+
+export const addEvaluadorToCatalogs = (evaluadorName: string): Catalogs => {
+  const current = loadCatalogs();
+  const trimmed = evaluadorName.trim().toUpperCase();
+  if (!trimmed || current.evaluadores.includes(trimmed)) return current;
+  const updated: Catalogs = {
+    ...current,
+    evaluadores: [...current.evaluadores, trimmed].sort()
+  };
+  saveCatalogs(updated);
+  return updated;
+};
+
+export const removeEvaluadorFromCatalogs = (evaluadorName: string): Catalogs => {
+  const current = loadCatalogs();
+  const updated: Catalogs = {
+    ...current,
+    evaluadores: current.evaluadores.filter(e => e !== evaluadorName)
+  };
+  saveCatalogs(updated);
+  return updated;
+};
+
+export const addProcesoToCatalogs = (procesoName: string): Catalogs => {
+  const current = loadCatalogs();
+  const trimmed = procesoName.trim().toUpperCase();
+  if (!trimmed || current.procesos.includes(trimmed)) return current;
+  const updated: Catalogs = {
+    ...current,
+    procesos: [...current.procesos, trimmed].sort()
+  };
+  saveCatalogs(updated);
+  return updated;
+};
+
+export const removeProcesoFromCatalogs = (procesoName: string): Catalogs => {
+  const current = loadCatalogs();
+  const updated: Catalogs = {
+    ...current,
+    procesos: current.procesos.filter(p => p !== procesoName)
+  };
+  saveCatalogs(updated);
+  return updated;
 };
 
 export const recalculateTaskStatus = (task: Task): Task => {

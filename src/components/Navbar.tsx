@@ -13,7 +13,8 @@ import {
   Cloud,
   CloudCheck,
   CloudOff,
-  Calendar
+  Calendar,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Catalogs, UserRole } from '../types';
 
@@ -35,6 +36,7 @@ interface NavbarProps {
   totalTasks: number;
   isCloudConnected: boolean;
   onOpenCloudSettings: () => void;
+  onOpenManageCatalogs: () => void;
 }
 
 const MONTH_OPTIONS = [
@@ -70,7 +72,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetData,
   totalTasks,
   isCloudConnected,
-  onOpenCloudSettings
+  onOpenCloudSettings,
+  onOpenManageCatalogs
 }) => {
   return (
     <header style={{
@@ -288,6 +291,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             {isCloudConnected ? <CloudCheck size={16} /> : <Cloud size={16} />}
             <span>{isCloudConnected ? 'Nube Activa' : 'Conectar Nube'}</span>
+          </button>
+
+          {/* Manage Catalogs Button */}
+          <button
+            onClick={onOpenManageCatalogs}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              padding: '0.45rem 0.85rem',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="Administrar Unidades Operativas (Sedes), Evaluadores y Procesos"
+          >
+            <SlidersHorizontal size={15} color="#38BDF8" />
+            <span>Catálogos</span>
           </button>
 
           {/* Actions: Export Excel & Reset */}
