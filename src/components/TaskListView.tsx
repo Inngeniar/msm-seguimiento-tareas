@@ -9,6 +9,7 @@ import {
   FilterX
 } from 'lucide-react';
 import { Task, TaskStatus, Catalogs, UserRole } from '../types';
+import { MONTH_NAMES } from '../utils/filters';
 
 interface TaskListViewProps {
   tasks: Task[];
@@ -17,6 +18,11 @@ interface TaskListViewProps {
   setSelectedUO: (uo: string) => void;
   selectedRole: UserRole;
   setSelectedRole: (role: UserRole) => void;
+  selectedYear?: string;
+  setSelectedYear?: (year: string) => void;
+  selectedMonth?: string;
+  setSelectedMonth?: (month: string) => void;
+  onClearAllFilters?: () => void;
   onEditTask: (task: Task) => void;
   onCompleteTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -29,6 +35,11 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   setSelectedUO,
   selectedRole,
   setSelectedRole,
+  selectedYear,
+  setSelectedYear,
+  selectedMonth,
+  setSelectedMonth,
+  onClearAllFilters,
   onEditTask,
   onCompleteTask,
   onDeleteTask
@@ -114,15 +125,22 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
     }
   };
 
-  const hasActiveFilters = Boolean(search || selectedUO || (selectedRole && selectedRole !== 'TODOS') || filterProceso || filterEstado);
+  const isGlobalFiltered = Boolean(selectedUO || (selectedRole && selectedRole !== 'TODOS') || selectedYear || selectedMonth);
+  const hasActiveFilters = Boolean(search || filterProceso || filterEstado || isGlobalFiltered);
 
   const resetAllFilters = () => {
     setSearch('');
-    setSelectedUO('');
-    setSelectedRole('TODOS');
     setFilterProceso('');
     setFilterEstado('');
     setCurrentPage(1);
+    if (onClearAllFilters) {
+      onClearAllFilters();
+    } else {
+      setSelectedUO('');
+      setSelectedRole('TODOS');
+      if (setSelectedYear) setSelectedYear('');
+      if (setSelectedMonth) setSelectedMonth('');
+    }
   };
 
   return (
@@ -134,24 +152,26 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
         padding: '1.25rem',
         boxShadow: 'var(--shadow-sm)',
         marginBottom: '1.25rem',
-        border: selectedUO || selectedRole !== 'TODOS' ? '2px solid var(--msm-accent)' : '1px solid #E2E8F0'
+        border: isGlobalFiltered ? '2px solid var(--msm-accent)' : '1px solid #E2E8F0'
       }}>
         {/* Active Filter Notice */}
-        {(selectedUO || selectedRole !== 'TODOS') && (
+        {isGlobalFiltered && (
           <div style={{
             backgroundColor: '#F0F9FF',
             border: '1px solid #BAE6FD',
             borderRadius: 'var(--radius-md)',
-            padding: '0.5rem 0.85rem',
+            padding: '0.55rem 0.95rem',
             marginBottom: '1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             fontSize: '0.82rem',
-            color: '#0369A1'
+            color: '#0369A1',
+            flexWrap: 'wrap',
+            gap: '0.5rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>Filtro activo desde la barra superior:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span>Filtros activos globales:</span>
               {selectedUO && (
                 <strong style={{ backgroundColor: 'var(--msm-navy)', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
                   Sede: {selectedUO}
@@ -162,12 +182,31 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
                   Perfil: {selectedRole}
                 </strong>
               )}
+              {selectedYear && (
+                <strong style={{ backgroundColor: '#D97706', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                  Año: {selectedYear}
+                </strong>
+              )}
+              {selectedMonth && (
+                <strong style={{ backgroundColor: '#059669', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                  Mes: {MONTH_NAMES[selectedMonth] || selectedMonth}
+                </strong>
+              )}
             </div>
             <button
-              onClick={() => { setSelectedUO(''); setSelectedRole('TODOS'); }}
-              style={{ color: '#0369A1', fontWeight: 700, textDecoration: 'underline', fontSize: '0.75rem' }}
+              onClick={resetAllFilters}
+              style={{
+                color: '#DC2626',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+                padding: '0.25rem 0.55rem',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer'
+              }}
             >
-              Mostrar todas las sedes y roles
+              Limpiar filtros globales
             </button>
           </div>
         )}

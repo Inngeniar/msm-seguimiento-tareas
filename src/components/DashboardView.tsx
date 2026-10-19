@@ -12,15 +12,22 @@ import {
   FilterX
 } from 'lucide-react';
 import { Task, KPIStats, UserRole } from '../types';
+import { MONTH_NAMES } from '../utils/filters';
 
 interface DashboardViewProps {
   tasks: Task[];
+  comparisonTasks: Task[];
   allTasks: Task[];
   kpis: KPIStats;
   selectedUO: string;
   setSelectedUO: (uo: string) => void;
   selectedRole: UserRole;
   setSelectedRole: (role: UserRole) => void;
+  selectedYear: string;
+  setSelectedYear: (year: string) => void;
+  selectedMonth: string;
+  setSelectedMonth: (month: string) => void;
+  onClearAllFilters: () => void;
   onSelectTask: (task: Task) => void;
   onQuickComplete: (taskId: string) => void;
   onViewAllTasks: () => void;
@@ -28,12 +35,18 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
+  comparisonTasks,
   allTasks,
   kpis,
   selectedUO,
   setSelectedUO,
   selectedRole,
   setSelectedRole,
+  selectedYear,
+  setSelectedYear,
+  selectedMonth,
+  setSelectedMonth,
+  onClearAllFilters,
   onSelectTask,
   onQuickComplete,
   onViewAllTasks
@@ -53,9 +66,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     { label: 'Sin Fecha Compromiso', count: kpis.sinFecha, color: '#94A3B8', pct: kpis.total ? Math.round((kpis.sinFecha / kpis.total) * 100) : 0 }
   ];
 
-  // Group by UO across ALL tasks for the comparative table, but highlight the selected one
+  // Group by UO across comparisonTasks (respects Year, Month, Role) for the comparative table
   const uoMap: { [key: string]: { total: number; cumplidas: number; noCumplidas: number; pct: number } } = {};
-  allTasks.forEach(t => {
+  comparisonTasks.forEach(t => {
     if (!uoMap[t.uo]) {
       uoMap[t.uo] = { total: 0, cumplidas: 0, noCumplidas: 0, pct: 0 };
     }
@@ -70,7 +83,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       total: d.total,
       cumplidas: d.cumplidas,
       noCumplidas: d.noCumplidas,
-      pct: Math.round((d.cumplidas / d.total) * 100)
+      pct: d.total > 0 ? Math.round((d.cumplidas / d.total) * 100) : 0
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -89,7 +102,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .sort((a, b) => b.total - a.total)
     .slice(0, 7);
 
-  const isFiltered = Boolean(selectedUO || (selectedRole && selectedRole !== 'TODOS'));
+  const isFiltered = Boolean(selectedUO || (selectedRole && selectedRole !== 'TODOS') || selectedYear || selectedMonth);
 
   return (
     <div style={{ padding: '1.75rem', maxWidth: '1440px', margin: '0 auto' }}>
@@ -131,10 +144,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {selectedUO ? (
               <>Sede activa: <strong style={{ color: 'var(--msm-navy)', backgroundColor: '#F1F5F9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{selectedUO}</strong></>
             ) : (
-              <>Sedes: <strong style={{ color: 'var(--msm-blue)' }}>Todas las Unidades Operativas (Consolidado Nacional)</strong></>
+              <>Sedes: <strong style={{ color: 'var(--msm-blue)' }}>Todas las Unidades Operativas</strong></>
             )}
             {selectedRole !== 'TODOS' && (
               <> • Perfil: <strong style={{ color: '#0369A1', backgroundColor: '#F0F9FF', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{selectedRole}</strong></>
+            )}
+            {selectedYear && (
+              <> • Año: <strong style={{ color: '#D97706', backgroundColor: '#FFFBEB', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{selectedYear}</strong></>
+            )}
+            {selectedMonth && (
+              <> • Mes: <strong style={{ color: '#059669', backgroundColor: '#ECFDF5', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{MONTH_NAMES[selectedMonth] || selectedMonth}</strong></>
             )}
             {' '} • Analizando <strong>{tasks.length}</strong> tareas de {allTasks.length} totales
           </p>
@@ -143,7 +162,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {isFiltered && (
             <button
-              onClick={() => { setSelectedUO(''); setSelectedRole('TODOS'); }}
+              onClick={onClearAllFilters}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -154,11 +173,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 padding: '0.4rem 0.75rem',
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.78rem',
-                fontWeight: 700
+                fontWeight: 700,
+                cursor: 'pointer'
               }}
+              title="Restablecer todos los filtros (Sede, Perfil, Año y Mes) para ver el consolidado global"
             >
               <FilterX size={14} />
-              <span>Ver Consolidado Global</span>
+              <span>Limpiar Todos los Filtros</span>
             </button>
           )}
 
@@ -580,9 +601,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--msm-navy)' }}>
               Comparativa de Eficacia entre Unidades Operativas
+              {selectedYear && ` (${selectedYear})`}
+              {selectedMonth && ` - ${MONTH_NAMES[selectedMonth] || selectedMonth}`}
             </h3>
             <p style={{ fontSize: '0.8rem', color: '#64748B' }}>
-              Haz clic en cualquier sede para enfocar el análisis en ella
+              {uoRankings.length === 0 ? (
+                'No se registran tareas para las sedes en este periodo o dimensión seleccionada'
+              ) : (selectedYear || selectedMonth || selectedRole !== 'TODOS') ? (
+                `Mostrando desempeño de las ${uoRankings.length} sedes con tareas en este periodo. Haz clic para enfocar una sede.`
+              ) : (
+                'Haz clic en cualquier sede para enfocar el análisis en ella'
+              )}
             </p>
           </div>
         </div>

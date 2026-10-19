@@ -37,6 +37,7 @@ import { UOPerformanceView } from './components/UOPerformanceView';
 import { ProcessMatrixView } from './components/ProcessMatrixView';
 import { CloudSettingsModal } from './components/CloudSettingsModal';
 import { ManageCatalogsModal } from './components/ManageCatalogsModal';
+import { filterTasks, getTaskYear } from './utils/filters';
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -109,40 +110,45 @@ export const App: React.FC = () => {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  // Extract distinct years from tasks
+  // Extract distinct years from tasks using evaluation dates
   const availableYears = useMemo(() => {
     const yrs = new Set<string>();
     tasks.forEach(t => {
-      const d = t.fechaCompromiso || t.fechaEvaluacion;
-      if (d && d.length >= 4) {
-        const yr = d.slice(0, 4);
-        if (/^\d{4}$/.test(yr)) yrs.add(yr);
-      }
+      const yr = getTaskYear(t);
+      if (yr && /^\d{4}$/.test(yr)) yrs.add(yr);
     });
     return Array.from(yrs).sort().reverse();
   }, [tasks]);
 
-  // Filter tasks by selected UO, Role, Year, and Month for Dashboard and Views
+  // Filter tasks by selected UO, Role, Year, and Month for Dashboard and all Views
   const scopedTasks = useMemo(() => {
-    return tasks.filter(t => {
-      if (selectedUO && t.uo !== selectedUO) return false;
-      if (selectedRole !== 'TODOS' && t.responsable !== selectedRole) return false;
-      if (selectedYear) {
-        const d = t.fechaCompromiso || t.fechaEvaluacion;
-        if (!d || !d.startsWith(selectedYear)) return false;
-      }
-      if (selectedMonth) {
-        const d = t.fechaCompromiso || t.fechaEvaluacion;
-        if (!d) return false;
-        const parts = d.split('-');
-        if (parts.length < 2 || parts[1] !== selectedMonth) return false;
-      }
-      return true;
+    return filterTasks(tasks, {
+      uo: selectedUO,
+      role: selectedRole,
+      year: selectedYear,
+      month: selectedMonth
     });
   }, [tasks, selectedUO, selectedRole, selectedYear, selectedMonth]);
 
-  // Compute live KPIs
+  // Tasks filtered by temporal & profile dimensions (for UO comparison and summary views)
+  const periodRoleTasks = useMemo(() => {
+    return filterTasks(tasks, {
+      role: selectedRole,
+      year: selectedYear,
+      month: selectedMonth
+    });
+  }, [tasks, selectedRole, selectedYear, selectedMonth]);
+
+  // Compute live KPIs on the fully scoped tasks
   const kpis = useMemo(() => calculateKPIs(scopedTasks), [scopedTasks]);
+
+  // Global filter clear handler
+  const handleClearAllFilters = () => {
+    setSelectedUO('');
+    setSelectedRole('TODOS');
+    setSelectedYear('');
+    setSelectedMonth('');
+  };
 
   // Handlers with dual Local + Cloud sync
   const handleSaveTask = async (taskData: any) => {
@@ -190,8 +196,9 @@ export const App: React.FC = () => {
   };
 
   const handleExportExcel = () => {
-    exportTasksToExcel(tasks);
-    showNotification('✓ Archivo Excel generado y descargado.');
+    const toExport = scopedTasks.length > 0 ? scopedTasks : tasks;
+    exportTasksToExcel(toExport);
+    showNotification(`✓ Archivo Excel generado con ${toExport.length} tareas.`);
   };
 
   const handleResetData = () => {
@@ -302,12 +309,18 @@ export const App: React.FC = () => {
         {activeTab === 'dashboard' && (
           <DashboardView
             tasks={scopedTasks}
+            comparisonTasks={periodRoleTasks}
             allTasks={tasks}
             kpis={kpis}
             selectedUO={selectedUO}
             setSelectedUO={setSelectedUO}
             selectedRole={selectedRole}
             setSelectedRole={setSelectedRole}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            onClearAllFilters={handleClearAllFilters}
             onSelectTask={(task) => {
               setEditingTask(task);
               setIsFormModalOpen(true);
@@ -325,12 +338,17 @@ export const App: React.FC = () => {
 
         {activeTab === 'tasks' && (
           <TaskListView
-            tasks={tasks}
+            tasks={scopedTasks}
             catalogs={catalogs}
             selectedUO={selectedUO}
             setSelectedUO={setSelectedUO}
             selectedRole={selectedRole}
             setSelectedRole={setSelectedRole}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            onClearAllFilters={handleClearAllFilters}
             onEditTask={(task) => {
               setEditingTask(task);
               setIsFormModalOpen(true);
@@ -345,22 +363,32 @@ export const App: React.FC = () => {
 
         {activeTab === 'uo-summary' && (
           <UOPerformanceView
-            tasks={tasks}
+            tasks={periodRoleTasks}
             catalogs={catalogs}
+            selectedUO={selectedUO}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            selectedRole={selectedRole}
             onFilterUO={(uo) => {
               setSelectedUO(uo);
               setActiveTab('tasks');
             }}
+            onClearFilters={handleClearAllFilters}
           />
         )}
 
         {activeTab === 'process-summary' && (
           <ProcessMatrixView
-            tasks={tasks}
+            tasks={scopedTasks}
             catalogs={catalogs}
+            selectedUO={selectedUO}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            selectedRole={selectedRole}
             onFilterProcess={(proceso) => {
               setActiveTab('tasks');
             }}
+            onClearFilters={handleClearAllFilters}
           />
         )}
       </main>
