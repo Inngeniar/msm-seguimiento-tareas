@@ -179,13 +179,23 @@ export const saveTasks = (tasks: Task[]): void => {
   }
 };
 
-export const addTask = (newTask: Omit<Task, 'id'>): Task[] => {
+export const addTask = (newTask: Omit<Task, 'id'> & { id?: string }): Task[] => {
   const current = loadTasks();
-  const id = `TASK-${String(current.length + 1).padStart(4, '0')}`;
+  let maxNum = current.length;
+  current.forEach(t => {
+    if (t.id) {
+      const match = t.id.match(/^TASK-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  });
+  const id = newTask.id || `TASK-${String(maxNum + 1).padStart(4, '0')}`;
   const taskWithId: Task = recalculateTaskStatus({
     ...newTask,
     id,
-    row: current.length + 8
+    row: maxNum + 8
   });
   const updated = [taskWithId, ...current];
   saveTasks(updated);

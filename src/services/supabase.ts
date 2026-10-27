@@ -6,18 +6,25 @@ export interface SupabaseConfig {
   anonKey: string;
 }
 
-const SUPABASE_CONFIG_KEY = 'msm_supabase_config';
+// Configuración por defecto oficial Mundo Salud Médica
+export const DEFAULT_SUPABASE_URL = 'https://kghrlpwhtasvjspaeqah.supabase.co';
+export const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaHJscHdodGFzdmpzcGFlcWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxOTUyNzgsImV4cCI6MjEwNzc3MTI3OH0.dcnc_bzcgYe68pwMCNspExpc7Ht3wBQKi7kOCJ_ALAo';
+
+const SUPABASE_CONFIG_KEY = 'msm_supabase_config_v1';
 
 export const getStoredSupabaseConfig = (): SupabaseConfig => {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const envUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
   try {
     const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed.url && parsed.anonKey) {
-        return parsed;
+      if (parsed.url && parsed.anonKey && parsed.url.trim().length > 0 && parsed.anonKey.trim().length > 0) {
+        return {
+          url: parsed.url.trim(),
+          anonKey: parsed.anonKey.trim()
+        };
       }
     }
   } catch {
@@ -142,7 +149,8 @@ export const fetchCloudTasks = async (): Promise<Task[] | null> => {
     const { data, error } = await client
       .from('msm_tareas')
       .select('*')
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(5000);
 
     if (error) {
       console.error('Error fetching tasks from Supabase:', error);
