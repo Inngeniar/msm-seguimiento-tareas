@@ -13,14 +13,29 @@ export const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e
 const SUPABASE_CONFIG_KEY = 'msm_supabase_config_v1';
 
 export const getStoredSupabaseConfig = (): SupabaseConfig => {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+  let envUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+  let envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
+  // Proteccion estricta: Si envKey fue configurada por error con la URL o no es un JWT valido
+  if (!envKey || envKey.startsWith('http') || envKey.includes('supabase.co')) {
+    envKey = DEFAULT_SUPABASE_ANON_KEY;
+  }
+  if (!envUrl || !envUrl.startsWith('http')) {
+    envUrl = DEFAULT_SUPABASE_URL;
+  }
 
   try {
     const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed.url && parsed.anonKey && parsed.url.trim().length > 0 && parsed.anonKey.trim().length > 0) {
+      // Validar que la clave almacenada no sea la URL por error
+      if (
+        parsed.url && 
+        parsed.anonKey && 
+        parsed.url.trim().startsWith('http') && 
+        !parsed.anonKey.trim().startsWith('http') &&
+        parsed.anonKey.trim().length > 20
+      ) {
         return {
           url: parsed.url.trim(),
           anonKey: parsed.anonKey.trim()
