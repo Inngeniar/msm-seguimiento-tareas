@@ -1,68 +1,134 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import './styles/theme.css';
-import { 
-  loadTasks, 
-  saveTasks, 
-  addTask, 
-  updateTask, 
-  completeTask, 
-  deleteTask, 
-  resetToInitial, 
-  calculateKPIs, 
-  loadCatalogs,
-  resetCatalogs,
-  addUOToCatalogs,
-  removeUOFromCatalogs,
-  addEvaluadorToCatalogs,
-  removeEvaluadorFromCatalogs,
-  addProcesoToCatalogs,
-  removeProcesoFromCatalogs,
-  recalculateTaskStatus
-} from './services/storage';
-import { 
-  fetchCloudTasks, 
-  upsertCloudTask, 
-  deleteCloudTask, 
-  subscribeToCloudChanges, 
-  getStoredSupabaseConfig 
-} from './services/supabase';
-import { exportTasksToExcel } from './utils/excelExporter';
-import { Task, UserRole, Catalogs } from './types';
-import { Navbar } from './components/Navbar';
-import { DashboardView } from './components/DashboardView';
-import { TaskListView } from './components/TaskListView';
-import { TaskFormModal } from './components/TaskFormModal';
-import { CompleteTaskModal } from './components/CompleteTaskModal';
-import { UOPerformanceView } from './components/UOPerformanceView';
-import { ProcessMatrixView } from './components/ProcessMatrixView';
-import { CloudSettingsModal } from './components/CloudSettingsModal';
-import { ManageCatalogsModal } from './components/ManageCatalogsModal';
-import { filterTasks, getTaskYear } from './utils/filters';
-
-export const App: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'new-task' | 'uo-summary' | 'process-summary'>('dashboard');
-  const [selectedUO, setSelectedUO] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('TODOS');
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
-  
-  // Modals state
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [completingTask, setCompletingTask] = useState<Task | null>(null);
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
-  const [isCloudConnected, setIsCloudConnected] = useState(false);
-
-  // Notifications
-  const [notification, setNotification] = useState<string | null>(null);
-
-  // Dynamic Catalogs state
-  const [catalogs, setCatalogs] = useState<Catalogs>(() => loadCatalogs());
-  const [isCatalogsModalOpen, setIsCatalogsModalOpen] = useState(false);
-
-  // Sync / Load tasks from Cloud or Local
+import React, { useState, useEffect, useMemo } from 'react';
+
+import './styles/theme.css';
+
+import { 
+
+  loadTasks, 
+
+  saveTasks, 
+
+  addTask, 
+
+  updateTask, 
+
+  completeTask, 
+
+  deleteTask, 
+
+  resetToInitial, 
+
+  calculateKPIs, 
+
+  loadCatalogs,
+
+  resetCatalogs,
+
+  addUOToCatalogs,
+
+  removeUOFromCatalogs,
+
+  addEvaluadorToCatalogs,
+
+  removeEvaluadorFromCatalogs,
+
+  addProcesoToCatalogs,
+
+  removeProcesoFromCatalogs,
+
+  recalculateTaskStatus
+
+} from './services/storage';
+
+import { 
+
+  fetchCloudTasks, 
+
+  upsertCloudTask, 
+
+  deleteCloudTask, 
+
+  subscribeToCloudChanges, 
+
+  getStoredSupabaseConfig 
+
+} from './services/supabase';
+
+import { exportTasksToExcel } from './utils/excelExporter';
+
+import { Task, UserRole, Catalogs } from './types';
+
+import { Navbar } from './components/Navbar';
+
+import { DashboardView } from './components/DashboardView';
+
+import { TaskListView } from './components/TaskListView';
+
+import { TaskFormModal } from './components/TaskFormModal';
+
+import { CompleteTaskModal } from './components/CompleteTaskModal';
+
+import { UOPerformanceView } from './components/UOPerformanceView';
+
+import { ProcessMatrixView } from './components/ProcessMatrixView';
+
+import { CloudSettingsModal } from './components/CloudSettingsModal';
+
+import { ManageCatalogsModal } from './components/ManageCatalogsModal';
+
+import { filterTasks, getTaskYear } from './utils/filters';
+
+
+
+export const App: React.FC = () => {
+
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'new-task' | 'uo-summary' | 'process-summary'>('dashboard');
+
+  const [selectedUO, setSelectedUO] = useState<string>('');
+
+  const [selectedRole, setSelectedRole] = useState<UserRole>('TODOS');
+
+  const [selectedYear, setSelectedYear] = useState<string>('');
+
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+
+  
+
+  // Modals state
+
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const [completingTask, setCompletingTask] = useState<Task | null>(null);
+
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
+
+
+
+  // Notifications
+
+  const [notification, setNotification] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+
+
+  // Dynamic Catalogs state
+
+  const [catalogs, setCatalogs] = useState<Catalogs>(() => loadCatalogs());
+
+  const [isCatalogsModalOpen, setIsCatalogsModalOpen] = useState(false);
+
+
+
+  // Sync / Load tasks from Cloud or Local
+
   const loadData = async () => {
     // 1. Mostrar cache local instantaneo
     const local = loadTasks();
@@ -89,75 +155,144 @@ export const App: React.FC = () => {
       const loaded = loadTasks();
       setTasks(loaded);
     }
-  };
-
-  // Load initial tasks on mount and setup real-time subscription
-  useEffect(() => {
-    loadData();
-
-    // Subscribe to cloud database changes in real-time
-    const unsubscribe = subscribeToCloudChanges(() => {
-      fetchCloudTasks().then((cloudTasks) => {
-        if (cloudTasks && cloudTasks.length > 0) {
-          const processed = cloudTasks.map(recalculateTaskStatus);
-          setTasks(processed);
-          saveTasks(processed);
-          showNotification('⚡ Datos actualizados en tiempo real desde otra sede.');
-        }
-      });
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  const showNotification = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3500);
-  };
-
-  // Extract distinct years from tasks using evaluation dates
-  const availableYears = useMemo(() => {
-    const yrs = new Set<string>();
-    tasks.forEach(t => {
-      const yr = getTaskYear(t);
-      if (yr && /^\d{4}$/.test(yr)) yrs.add(yr);
-    });
-    return Array.from(yrs).sort().reverse();
-  }, [tasks]);
-
-  // Filter tasks by selected UO, Role, Year, and Month for Dashboard and all Views
-  const scopedTasks = useMemo(() => {
-    return filterTasks(tasks, {
-      uo: selectedUO,
-      role: selectedRole,
-      year: selectedYear,
-      month: selectedMonth
-    });
-  }, [tasks, selectedUO, selectedRole, selectedYear, selectedMonth]);
-
-  // Tasks filtered by temporal & profile dimensions (for UO comparison and summary views)
-  const periodRoleTasks = useMemo(() => {
-    return filterTasks(tasks, {
-      role: selectedRole,
-      year: selectedYear,
-      month: selectedMonth
-    });
-  }, [tasks, selectedRole, selectedYear, selectedMonth]);
-
-  // Compute live KPIs on the fully scoped tasks
-  const kpis = useMemo(() => calculateKPIs(scopedTasks), [scopedTasks]);
-
-  // Global filter clear handler
-  const handleClearAllFilters = () => {
-    setSelectedUO('');
-    setSelectedRole('TODOS');
-    setSelectedYear('');
-    setSelectedMonth('');
-  };
-
-  // Handlers with dual Local + Cloud sync
+  };
+
+
+
+  // Load initial tasks on mount and setup real-time subscription
+
+  useEffect(() => {
+
+    loadData();
+
+
+
+    // Subscribe to cloud database changes in real-time
+
+    const unsubscribe = subscribeToCloudChanges(() => {
+
+      fetchCloudTasks().then((cloudTasks) => {
+
+        if (cloudTasks && cloudTasks.length > 0) {
+
+          const processed = cloudTasks.map(recalculateTaskStatus);
+
+          setTasks(processed);
+
+          saveTasks(processed);
+
+          showNotification('⚡ Datos actualizados en tiempo real desde otra sede.');
+
+        }
+
+      });
+
+    });
+
+
+
+    return () => {
+
+      unsubscribe();
+
+    };
+
+  }, []);
+
+
+
+  const showNotification = (msg: string) => {
+
+    setNotification(msg);
+
+    setTimeout(() => setNotification(null), 3500);
+
+  };
+
+
+
+  // Extract distinct years from tasks using evaluation dates
+
+  const availableYears = useMemo(() => {
+
+    const yrs = new Set<string>();
+
+    tasks.forEach(t => {
+
+      const yr = getTaskYear(t);
+
+      if (yr && /^\d{4}$/.test(yr)) yrs.add(yr);
+
+    });
+
+    return Array.from(yrs).sort().reverse();
+
+  }, [tasks]);
+
+
+
+  // Filter tasks by selected UO, Role, Year, and Month for Dashboard and all Views
+
+  const scopedTasks = useMemo(() => {
+
+    return filterTasks(tasks, {
+
+      uo: selectedUO,
+
+      role: selectedRole,
+
+      year: selectedYear,
+
+      month: selectedMonth
+
+    });
+
+  }, [tasks, selectedUO, selectedRole, selectedYear, selectedMonth]);
+
+
+
+  // Tasks filtered by temporal & profile dimensions (for UO comparison and summary views)
+
+  const periodRoleTasks = useMemo(() => {
+
+    return filterTasks(tasks, {
+
+      role: selectedRole,
+
+      year: selectedYear,
+
+      month: selectedMonth
+
+    });
+
+  }, [tasks, selectedRole, selectedYear, selectedMonth]);
+
+
+
+  // Compute live KPIs on the fully scoped tasks
+
+  const kpis = useMemo(() => calculateKPIs(scopedTasks), [scopedTasks]);
+
+
+
+  // Global filter clear handler
+
+  const handleClearAllFilters = () => {
+
+    setSelectedUO('');
+
+    setSelectedRole('TODOS');
+
+    setSelectedYear('');
+
+    setSelectedMonth('');
+
+  };
+
+
+
+  // Handlers with dual Local + Cloud sync
+
   const handleSaveTask = async (taskData: any) => {
     let targetTask: Task;
     if (editingTask) {
@@ -177,8 +312,10 @@ export const App: React.FC = () => {
       if (ok) setIsCloudConnected(true);
     }
     setEditingTask(null);
-  };
-
+  };
+
+
+
   const handleConfirmComplete = async (taskId: string, fechaEjecucion: string, observaciones: string) => {
     const updated = completeTask(taskId, fechaEjecucion, observaciones);
     setTasks(updated);
@@ -190,283 +327,564 @@ export const App: React.FC = () => {
       if (ok) setIsCloudConnected(true);
     }
     setCompletingTask(null);
-  };
-
+  };
+
+
+
   const handleDeleteTask = async (taskId: string) => {
     const updated = deleteTask(taskId);
     setTasks(updated);
     showNotification('🗑️ Tarea eliminada del seguimiento.');
 
     await deleteCloudTask(taskId);
-  };
-
-  const handleExportExcel = () => {
-    const toExport = scopedTasks.length > 0 ? scopedTasks : tasks;
-    exportTasksToExcel(toExport);
-    showNotification(`✓ Archivo Excel generado con ${toExport.length} tareas.`);
-  };
-
-  const handleResetData = () => {
-    if (confirm('¿Restablecer los datos originales del archivo Excel? Los cambios manuales no guardados en Excel se reiniciarán.')) {
-      const reset = resetToInitial();
-      setTasks(reset);
-      showNotification('✓ Datos restablecidos a la versión base oficial.');
-    }
-  };
-
-  // Dynamic Catalog handlers
-  const handleAddUO = (name: string) => {
-    const updated = addUOToCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Sede ${name} agregada al catálogo.`);
-  };
-
-  const handleRemoveUO = (name: string) => {
-    const updated = removeUOFromCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Sede ${name} removida del catálogo.`);
-  };
-
-  const handleAddEvaluador = (name: string) => {
-    const updated = addEvaluadorToCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Evaluador ${name} agregado al catálogo.`);
-  };
-
-  const handleRemoveEvaluador = (name: string) => {
-    const updated = removeEvaluadorFromCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Evaluador ${name} removido del catálogo.`);
-  };
-
-  const handleAddProceso = (name: string) => {
-    const updated = addProcesoToCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Proceso ${name} agregado al catálogo.`);
-  };
-
-  const handleRemoveProceso = (name: string) => {
-    const updated = removeProcesoFromCatalogs(name);
-    setCatalogs(updated);
-    showNotification(`✓ Proceso ${name} removido del catálogo.`);
-  };
-
-  const handleResetCatalogs = () => {
-    const updated = resetCatalogs();
-    setCatalogs(updated);
-    showNotification('✓ Catálogos restaurados a valores oficiales por defecto.');
-  };
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Toast Notification */}
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          backgroundColor: 'var(--msm-navy)',
-          color: '#FFFFFF',
-          padding: '0.85rem 1.4rem',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 9999,
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          borderLeft: '4px solid #10B981',
-          animation: 'fadeIn 0.3s ease'
-        }}>
-          {notification}
-        </div>
-      )}
-
-      {/* Navbar Header */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={(tab) => {
-          if (tab === 'new-task') {
-            setEditingTask(null);
-            setIsFormModalOpen(true);
-          } else {
-            setActiveTab(tab);
-          }
-        }}
-        selectedUO={selectedUO}
-        setSelectedUO={setSelectedUO}
-        selectedRole={selectedRole}
-        setSelectedRole={setSelectedRole}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        availableYears={availableYears}
-        catalogs={catalogs}
-        onExportExcel={handleExportExcel}
-        onResetData={handleResetData}
-        totalTasks={scopedTasks.length}
-        isCloudConnected={isCloudConnected}
-        onOpenCloudSettings={() => setIsCloudModalOpen(true)}
-        onOpenManageCatalogs={() => setIsCatalogsModalOpen(true)}
-      />
-
-      {/* Main View Router */}
-      <main style={{ flex: 1 }}>
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            tasks={scopedTasks}
-            comparisonTasks={periodRoleTasks}
-            allTasks={tasks}
-            kpis={kpis}
-            selectedUO={selectedUO}
-            setSelectedUO={setSelectedUO}
-            selectedRole={selectedRole}
-            setSelectedRole={setSelectedRole}
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            onClearAllFilters={handleClearAllFilters}
-            onSelectTask={(task) => {
-              setEditingTask(task);
-              setIsFormModalOpen(true);
-            }}
-            onQuickComplete={(taskId) => {
-              const target = tasks.find(t => t.id === taskId);
-              if (target) {
-                setCompletingTask(target);
-                setIsCompleteModalOpen(true);
-              }
-            }}
-            onViewAllTasks={() => setActiveTab('tasks')}
-          />
-        )}
-
-        {activeTab === 'tasks' && (
-          <TaskListView
-            tasks={scopedTasks}
-            catalogs={catalogs}
-            selectedUO={selectedUO}
-            setSelectedUO={setSelectedUO}
-            selectedRole={selectedRole}
-            setSelectedRole={setSelectedRole}
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            onClearAllFilters={handleClearAllFilters}
-            onEditTask={(task) => {
-              setEditingTask(task);
-              setIsFormModalOpen(true);
-            }}
-            onCompleteTask={(task) => {
-              setCompletingTask(task);
-              setIsCompleteModalOpen(true);
-            }}
-            onDeleteTask={handleDeleteTask}
-          />
-        )}
-
-        {activeTab === 'uo-summary' && (
-          <UOPerformanceView
-            tasks={periodRoleTasks}
-            catalogs={catalogs}
-            selectedUO={selectedUO}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            selectedRole={selectedRole}
-            onFilterUO={(uo) => {
-              setSelectedUO(uo);
-              setActiveTab('tasks');
-            }}
-            onClearFilters={handleClearAllFilters}
-          />
-        )}
-
-        {activeTab === 'process-summary' && (
-          <ProcessMatrixView
-            tasks={scopedTasks}
-            catalogs={catalogs}
-            selectedUO={selectedUO}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            selectedRole={selectedRole}
-            onFilterProcess={(proceso) => {
-              setActiveTab('tasks');
-            }}
-            onClearFilters={handleClearAllFilters}
-          />
-        )}
-      </main>
-
-      {/* Task Form Modal (Create / Edit) */}
-      <TaskFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setEditingTask(null);
-        }}
-        onSave={handleSaveTask}
-        initialTask={editingTask}
-        catalogs={catalogs}
-        defaultUO={selectedUO}
-      />
-
-      {/* Quick Complete Modal */}
-      <CompleteTaskModal
-        task={completingTask}
-        isOpen={isCompleteModalOpen}
-        onClose={() => {
-          setIsCompleteModalOpen(false);
-          setCompletingTask(null);
-        }}
-        onConfirm={handleConfirmComplete}
-      />
-
-      {/* Cloud Settings & Sync Modal */}
-      <CloudSettingsModal
-        isOpen={isCloudModalOpen}
-        onClose={() => setIsCloudModalOpen(false)}
-        tasks={tasks}
-        onTasksUpdatedFromCloud={loadData}
-      />
-
-      {/* Manage Catalogs Modal (Dynamic UOs, Evaluadores, Procesos) */}
-      <ManageCatalogsModal
-        isOpen={isCatalogsModalOpen}
-        onClose={() => setIsCatalogsModalOpen(false)}
-        catalogs={catalogs}
-        tasks={tasks}
-        onAddUO={handleAddUO}
-        onRemoveUO={handleRemoveUO}
-        onAddEvaluador={handleAddEvaluador}
-        onRemoveEvaluador={handleRemoveEvaluador}
-        onAddProceso={handleAddProceso}
-        onRemoveProceso={handleRemoveProceso}
-        onResetCatalogs={handleResetCatalogs}
-      />
-
-      {/* Footer */}
-      <footer style={{
-        backgroundColor: '#FFFFFF',
-        borderTop: '1px solid #E2E8F0',
-        padding: '1.25rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '0.75rem',
-        color: '#64748B',
-        marginTop: '2rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <strong style={{ color: 'var(--msm-navy)' }}>MUNDO SALUD MÉDICA S.A.S.</strong>
-          <span>• Dirección de Operaciones & Sistema Integrado de Gestión</span>
-        </div>
-        <div>
-          Formato DOE-FT-001 (Versión 04) • Herramienta Interactiva de Seguimiento a Tareas
-        </div>
-      </footer>
-    </div>
-  );
-};
-
-export default App;
+  };
+
+
+
+  const handleExportExcel = () => {
+
+    const toExport = scopedTasks.length > 0 ? scopedTasks : tasks;
+
+    exportTasksToExcel(toExport);
+
+    showNotification(`✓ Archivo Excel generado con ${toExport.length} tareas.`);
+
+  };
+
+
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      const cloudTasks = await fetchCloudTasks();
+      if (cloudTasks && cloudTasks.length > 0) {
+        const processed = cloudTasks.map(recalculateTaskStatus);
+        setTasks(processed);
+        saveTasks(processed);
+        setIsCloudConnected(true);
+        showNotification(`✅ Datos sincronizados con la nube (${processed.length} tareas al día).`);
+      } else {
+        showNotification('ℹ️ Conexión activa, los datos están al día.');
+      }
+    } catch {
+      showNotification('⚠️ Error al consultar la nube.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+
+
+  // Dynamic Catalog handlers
+
+  const handleAddUO = (name: string) => {
+
+    const updated = addUOToCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Sede ${name} agregada al catálogo.`);
+
+  };
+
+
+
+  const handleRemoveUO = (name: string) => {
+
+    const updated = removeUOFromCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Sede ${name} removida del catálogo.`);
+
+  };
+
+
+
+  const handleAddEvaluador = (name: string) => {
+
+    const updated = addEvaluadorToCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Evaluador ${name} agregado al catálogo.`);
+
+  };
+
+
+
+  const handleRemoveEvaluador = (name: string) => {
+
+    const updated = removeEvaluadorFromCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Evaluador ${name} removido del catálogo.`);
+
+  };
+
+
+
+  const handleAddProceso = (name: string) => {
+
+    const updated = addProcesoToCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Proceso ${name} agregado al catálogo.`);
+
+  };
+
+
+
+  const handleRemoveProceso = (name: string) => {
+
+    const updated = removeProcesoFromCatalogs(name);
+
+    setCatalogs(updated);
+
+    showNotification(`✓ Proceso ${name} removido del catálogo.`);
+
+  };
+
+
+
+  const handleResetCatalogs = () => {
+
+    const updated = resetCatalogs();
+
+    setCatalogs(updated);
+
+    showNotification('✓ Catálogos restaurados a valores oficiales por defecto.');
+
+  };
+
+
+
+  return (
+
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Toast Notification */}
+
+      {notification && (
+
+        <div style={{
+
+          position: 'fixed',
+
+          bottom: '24px',
+
+          right: '24px',
+
+          backgroundColor: 'var(--msm-navy)',
+
+          color: '#FFFFFF',
+
+          padding: '0.85rem 1.4rem',
+
+          borderRadius: 'var(--radius-md)',
+
+          boxShadow: 'var(--shadow-lg)',
+
+          zIndex: 9999,
+
+          fontSize: '0.85rem',
+
+          fontWeight: 600,
+
+          borderLeft: '4px solid #10B981',
+
+          animation: 'fadeIn 0.3s ease'
+
+        }}>
+
+          {notification}
+
+        </div>
+
+      )}
+
+
+
+      {/* Navbar Header */}
+
+      <Navbar
+
+        activeTab={activeTab}
+
+        setActiveTab={(tab) => {
+
+          if (tab === 'new-task') {
+
+            setEditingTask(null);
+
+            setIsFormModalOpen(true);
+
+          } else {
+
+            setActiveTab(tab);
+
+          }
+
+        }}
+
+        selectedUO={selectedUO}
+
+        setSelectedUO={setSelectedUO}
+
+        selectedRole={selectedRole}
+
+        setSelectedRole={setSelectedRole}
+
+        selectedYear={selectedYear}
+
+        setSelectedYear={setSelectedYear}
+
+        selectedMonth={selectedMonth}
+
+        setSelectedMonth={setSelectedMonth}
+
+        availableYears={availableYears}
+
+        catalogs={catalogs}
+
+        onExportExcel={handleExportExcel}
+
+        onRefreshData={handleRefreshData}
+        isRefreshing={isRefreshing}
+
+        totalTasks={scopedTasks.length}
+
+        isCloudConnected={isCloudConnected}
+
+        onOpenCloudSettings={() => setIsCloudModalOpen(true)}
+
+        onOpenManageCatalogs={() => setIsCatalogsModalOpen(true)}
+
+      />
+
+
+
+      {/* Main View Router */}
+
+      <main style={{ flex: 1 }}>
+
+        {activeTab === 'dashboard' && (
+
+          <DashboardView
+
+            tasks={scopedTasks}
+
+            comparisonTasks={periodRoleTasks}
+
+            allTasks={tasks}
+
+            kpis={kpis}
+
+            selectedUO={selectedUO}
+
+            setSelectedUO={setSelectedUO}
+
+            selectedRole={selectedRole}
+
+            setSelectedRole={setSelectedRole}
+
+            selectedYear={selectedYear}
+
+            setSelectedYear={setSelectedYear}
+
+            selectedMonth={selectedMonth}
+
+            setSelectedMonth={setSelectedMonth}
+
+            onClearAllFilters={handleClearAllFilters}
+
+            onSelectTask={(task) => {
+
+              setEditingTask(task);
+
+              setIsFormModalOpen(true);
+
+            }}
+
+            onQuickComplete={(taskId) => {
+
+              const target = tasks.find(t => t.id === taskId);
+
+              if (target) {
+
+                setCompletingTask(target);
+
+                setIsCompleteModalOpen(true);
+
+              }
+
+            }}
+
+            onViewAllTasks={() => setActiveTab('tasks')}
+
+          />
+
+        )}
+
+
+
+        {activeTab === 'tasks' && (
+
+          <TaskListView
+
+            tasks={scopedTasks}
+
+            catalogs={catalogs}
+
+            selectedUO={selectedUO}
+
+            setSelectedUO={setSelectedUO}
+
+            selectedRole={selectedRole}
+
+            setSelectedRole={setSelectedRole}
+
+            selectedYear={selectedYear}
+
+            setSelectedYear={setSelectedYear}
+
+            selectedMonth={selectedMonth}
+
+            setSelectedMonth={setSelectedMonth}
+
+            onClearAllFilters={handleClearAllFilters}
+
+            onEditTask={(task) => {
+
+              setEditingTask(task);
+
+              setIsFormModalOpen(true);
+
+            }}
+
+            onCompleteTask={(task) => {
+
+              setCompletingTask(task);
+
+              setIsCompleteModalOpen(true);
+
+            }}
+
+            onDeleteTask={handleDeleteTask}
+
+          />
+
+        )}
+
+
+
+        {activeTab === 'uo-summary' && (
+
+          <UOPerformanceView
+
+            tasks={periodRoleTasks}
+
+            catalogs={catalogs}
+
+            selectedUO={selectedUO}
+
+            selectedYear={selectedYear}
+
+            selectedMonth={selectedMonth}
+
+            selectedRole={selectedRole}
+
+            onFilterUO={(uo) => {
+
+              setSelectedUO(uo);
+
+              setActiveTab('tasks');
+
+            }}
+
+            onClearFilters={handleClearAllFilters}
+
+          />
+
+        )}
+
+
+
+        {activeTab === 'process-summary' && (
+
+          <ProcessMatrixView
+
+            tasks={scopedTasks}
+
+            catalogs={catalogs}
+
+            selectedUO={selectedUO}
+
+            selectedYear={selectedYear}
+
+            selectedMonth={selectedMonth}
+
+            selectedRole={selectedRole}
+
+            onFilterProcess={(proceso) => {
+
+              setActiveTab('tasks');
+
+            }}
+
+            onClearFilters={handleClearAllFilters}
+
+          />
+
+        )}
+
+      </main>
+
+
+
+      {/* Task Form Modal (Create / Edit) */}
+
+      <TaskFormModal
+
+        isOpen={isFormModalOpen}
+
+        onClose={() => {
+
+          setIsFormModalOpen(false);
+
+          setEditingTask(null);
+
+        }}
+
+        onSave={handleSaveTask}
+
+        initialTask={editingTask}
+
+        catalogs={catalogs}
+
+        defaultUO={selectedUO}
+
+      />
+
+
+
+      {/* Quick Complete Modal */}
+
+      <CompleteTaskModal
+
+        task={completingTask}
+
+        isOpen={isCompleteModalOpen}
+
+        onClose={() => {
+
+          setIsCompleteModalOpen(false);
+
+          setCompletingTask(null);
+
+        }}
+
+        onConfirm={handleConfirmComplete}
+
+      />
+
+
+
+      {/* Cloud Settings & Sync Modal */}
+
+      <CloudSettingsModal
+
+        isOpen={isCloudModalOpen}
+
+        onClose={() => setIsCloudModalOpen(false)}
+
+        tasks={tasks}
+
+        onTasksUpdatedFromCloud={loadData}
+
+      />
+
+
+
+      {/* Manage Catalogs Modal (Dynamic UOs, Evaluadores, Procesos) */}
+
+      <ManageCatalogsModal
+
+        isOpen={isCatalogsModalOpen}
+
+        onClose={() => setIsCatalogsModalOpen(false)}
+
+        catalogs={catalogs}
+
+        tasks={tasks}
+
+        onAddUO={handleAddUO}
+
+        onRemoveUO={handleRemoveUO}
+
+        onAddEvaluador={handleAddEvaluador}
+
+        onRemoveEvaluador={handleRemoveEvaluador}
+
+        onAddProceso={handleAddProceso}
+
+        onRemoveProceso={handleRemoveProceso}
+
+        onResetCatalogs={handleResetCatalogs}
+
+      />
+
+
+
+      {/* Footer */}
+
+      <footer style={{
+
+        backgroundColor: '#FFFFFF',
+
+        borderTop: '1px solid #E2E8F0',
+
+        padding: '1.25rem 2rem',
+
+        display: 'flex',
+
+        justifyContent: 'space-between',
+
+        alignItems: 'center',
+
+        fontSize: '0.75rem',
+
+        color: '#64748B',
+
+        marginTop: '2rem'
+
+      }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+
+          <strong style={{ color: 'var(--msm-navy)' }}>MUNDO SALUD MÉDICA S.A.S.</strong>
+
+          <span>• Dirección de Operaciones & Sistema Integrado de Gestión</span>
+
+        </div>
+
+        <div>
+
+          Formato DOE-FT-001 (Versión 04) • Herramienta Interactiva de Seguimiento a Tareas
+
+        </div>
+
+      </footer>
+
+    </div>
+
+  );
+
+};
+
+
+
+export default App;
+

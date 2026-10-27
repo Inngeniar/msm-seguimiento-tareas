@@ -7,7 +7,7 @@ import {
   Building2, 
   Briefcase, 
   Download, 
-  RotateCcw,
+  RefreshCw,
   ShieldCheck,
   UserCheck,
   Cloud,
@@ -32,7 +32,8 @@ interface NavbarProps {
   availableYears: string[];
   catalogs: Catalogs;
   onExportExcel: () => void;
-  onResetData: () => void;
+  onRefreshData: () => void;
+  isRefreshing?: boolean;
   totalTasks: number;
   isCloudConnected: boolean;
   onOpenCloudSettings: () => void;
@@ -69,7 +70,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   availableYears,
   catalogs,
   onExportExcel,
-  onResetData,
+  onRefreshData,
+  isRefreshing,
   totalTasks,
   isCloudConnected,
   onOpenCloudSettings,
@@ -338,21 +340,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={onResetData}
+            onClick={onRefreshData}
+            disabled={isRefreshing}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              backgroundColor: 'rgba(255, 255, 255, 0.12)',
-              color: '#E2E8F0',
-              padding: '0.45rem 0.7rem',
+              gap: '0.4rem',
+              backgroundColor: 'rgba(56, 189, 248, 0.15)',
+              color: '#38BDF8',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              padding: '0.45rem 0.8rem',
               borderRadius: 'var(--radius-md)',
-              fontSize: '0.75rem',
-              fontWeight: 500
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: isRefreshing ? 'wait' : 'pointer',
+              transition: 'all 0.2s ease'
             }}
-            title="Restablecer datos originales"
+            title="Actualizar y sincronizar con los datos más recientes de la nube"
           >
-            <RotateCcw size={14} />
+            <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+            <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
           </button>
         </div>
       </div>
